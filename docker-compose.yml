@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cartly-postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: cartly
+      POSTGRES_PASSWORD: cartly
+      POSTGRES_DB: cartly
+    volumes:
+      - cartly-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cartly -d cartly']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cartly-postgres-data:
