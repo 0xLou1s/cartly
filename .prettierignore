@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+
+# Lockfiles — managed by package manager
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated
+prisma/generated
+*.min.js
+*.min.css

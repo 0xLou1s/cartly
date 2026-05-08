@@ -1,8 +1,8 @@
+import type { JwtSignOptions } from '@nestjs/jwt'
+import { config } from 'dotenv'
 import fs from 'fs'
 import path from 'path'
-import { config } from 'dotenv'
 import z from 'zod'
-import type { JwtSignOptions } from '@nestjs/jwt'
 
 config({
   path: '.env',
