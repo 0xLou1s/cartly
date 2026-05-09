@@ -30,7 +30,14 @@ export class AuthService {
           totpSecret: true,
         },
       })
-      return user
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        tokens: await this.generateTokens({ userId: user.id }),
+      }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
         throw new ConflictException('Email already exists')
@@ -59,8 +66,14 @@ export class AuthService {
         },
       ])
     }
-    const tokens = await this.generateTokens({ userId: user.id })
-    return tokens
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+      tokens: await this.generateTokens({ userId: user.id }),
+    }
   }
 
   async generateTokens(payload: { userId: number }) {
