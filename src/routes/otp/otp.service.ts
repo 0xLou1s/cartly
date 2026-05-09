@@ -7,12 +7,14 @@ import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/c
 import envConfig from 'src/shared/env.config'
 import { generateOTP } from 'src/shared/helpers'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
+import { EmailService } from 'src/shared/services/email.service'
 
 @Injectable()
 export class OtpService {
   constructor(
     private readonly otpRepository: OtpRepository,
     private readonly sharedUserRepository: SharedUserRepository,
+    private readonly emailService: EmailService,
   ) {}
 
   async sendOTP(body: SendOTPBodyType) {
@@ -42,6 +44,20 @@ export class OtpService {
       type: body.type,
       expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
     })
+
+    const { error } = await this.emailService.sendOTP({
+      email: body.email,
+      code,
+    })
+    if (error) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Failed to send OTP',
+          path: 'code',
+        },
+      ])
+    }
+
     return verificationCode
   }
 
