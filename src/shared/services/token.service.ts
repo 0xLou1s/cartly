@@ -7,16 +7,16 @@ import { TokenPayload } from 'src/shared/types/jwt.type'
 export class TokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  signAccessToken(payload: { userId: number }) {
-    return this.jwtService.sign(payload, {
+  signAccessToken(payload: { userId: number }): Promise<string> {
+    return this.jwtService.signAsync(payload, {
       secret: envConfig.ACCESS_TOKEN_SECRET,
       expiresIn: envConfig.ACCESS_TOKEN_EXPIRES_IN,
       algorithm: 'HS256',
     })
   }
 
-  signRefreshToken(payload: { userId: number }) {
-    return this.jwtService.sign(payload, {
+  signRefreshToken(payload: { userId: number }): Promise<string> {
+    return this.jwtService.signAsync(payload, {
       secret: envConfig.REFRESH_TOKEN_SECRET,
       expiresIn: envConfig.REFRESH_TOKEN_EXPIRES_IN,
       algorithm: 'HS256',
