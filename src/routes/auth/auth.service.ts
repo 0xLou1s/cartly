@@ -4,6 +4,7 @@ import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared
 import { HashingService } from 'src/shared/services/hashing.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TokenService } from 'src/shared/services/token.service'
+import { RegisterBodyDTO } from './auth.dto'
 
 @Injectable()
 export class AuthService {
@@ -13,7 +14,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly rolesService: RolesService,
   ) {}
-  async register(body: any) {
+  async register(body: RegisterBodyDTO) {
     try {
       const clientRoleId = await this.rolesService.getClientRoleId()
       const hashedPassword = await this.hashingService.hash(body.password)
@@ -25,17 +26,9 @@ export class AuthService {
           phoneNumber: body.phoneNumber,
           roleId: clientRoleId,
         },
-        omit: {
-          password: true,
-          totpSecret: true,
-        },
       })
       return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
+        user,
         tokens: await this.generateTokens({ userId: user.id }),
       }
     } catch (error) {
@@ -67,11 +60,7 @@ export class AuthService {
       ])
     }
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
+      user,
       tokens: await this.generateTokens({ userId: user.id }),
     }
   }
