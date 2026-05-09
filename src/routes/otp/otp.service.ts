@@ -3,7 +3,7 @@ import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import { SendOTPBodyType } from 'src/routes/otp/otp.model'
 import { OtpRepository } from 'src/routes/otp/otp.repo'
-import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
 import envConfig from 'src/shared/env.config'
 import { generateOTP } from 'src/shared/helpers'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
@@ -43,5 +43,30 @@ export class OtpService {
       expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
     })
     return verificationCode
+  }
+
+  async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {
+    const verificationCode = await this.otpRepository.findUniqueVerificationCode(payload)
+    if (!verificationCode) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Invalid verification code',
+          path: 'code',
+        },
+      ])
+    }
+    if (verificationCode.expiresAt < new Date()) {
+      throw new UnprocessableEntityException([
+        {
+          message: 'Verification code expired',
+          path: 'code',
+        },
+      ])
+    }
+    return verificationCode
+  }
+
+  async deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
+    return this.otpRepository.deleteVerificationCode(uniqueValue)
   }
 }
