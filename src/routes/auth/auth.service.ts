@@ -85,8 +85,8 @@ export class AuthService {
     if (!user || !isPasswordMatch) {
       throw new UnprocessableEntityException([
         {
-          message: 'Invalid credentials',
-          path: 'email',
+          message: 'Email or password is incorrect',
+          path: 'password',
         },
       ])
     }
