@@ -1,4 +1,4 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { HttpException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import { RolesService } from 'src/routes/auth/roles.service'
@@ -10,7 +10,7 @@ import { HashingService } from 'src/shared/services/hashing.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type'
-import { LoginBodyType, RegisterBodyType } from './auth.model'
+import { LoginBodyType, RefreshTokenBodyType, RegisterBodyType } from './auth.model'
 import { AuthRepository } from './auth.repo'
 
 @Injectable()
@@ -124,5 +124,42 @@ export class AuthService {
       deviceId,
     })
     return { accessToken, refreshToken }
+  }
+
+  async refreshToken({ refreshToken, userAgent, ip }: RefreshTokenBodyType & { userAgent: string; ip: string }) {
+    try {
+      const { userId } = await this.tokenService.verifyRefreshToken(refreshToken)
+      const refreshTokenInDb = await this.authRepository.findUniqueRefreshTokenIncludeUserRole({
+        token: refreshToken,
+      })
+      if (!refreshTokenInDb) {
+        throw new UnauthorizedException('Refresh token has already been used')
+      }
+      const {
+        deviceId,
+        user: {
+          roleId,
+          role: { name: roleName },
+        },
+      } = refreshTokenInDb
+      if (!deviceId) {
+        throw new UnauthorizedException('Refresh token is not bound to a device')
+      }
+      const $updateDevice = this.authRepository.updateDevice(deviceId, {
+        ip,
+        userAgent,
+      })
+      const $deleteRefreshToken = this.authRepository.deleteRefreshToken({
+        token: refreshToken,
+      })
+      const $tokens = this.generateTokens({ userId, roleId, roleName, deviceId })
+      const [, , tokens] = await Promise.all([$updateDevice, $deleteRefreshToken, $tokens])
+      return tokens
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error
+      }
+      throw new UnauthorizedException()
+    }
   }
 }
