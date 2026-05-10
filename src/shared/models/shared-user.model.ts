@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 export const UserSchema = z.object({
   id: z.number(),
-  email: z.string().email(),
+  email: z.email(),
   name: z.string().min(1).max(100),
   password: z.string().min(6).max(100),
   phoneNumber: z.string().min(9).max(15),
@@ -18,4 +18,13 @@ export const UserSchema = z.object({
   updatedAt: z.date(),
 })
 
+export const UserResSchema = UserSchema.omit({
+  password: true,
+  totpSecret: true,
+  createdById: true,
+  updatedById: true,
+  deletedAt: true,
+})
+
 export type UserType = z.infer<typeof UserSchema>
+export type UserResType = z.infer<typeof UserResSchema>
