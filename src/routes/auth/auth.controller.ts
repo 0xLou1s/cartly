@@ -1,6 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Ip, Post } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Query, Res } from '@nestjs/common'
+import type { Response } from 'express'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
+  GetAuthorizationUrlResDTO,
   LoginBodyDTO,
   LoginResDTO,
   LogoutBodyDTO,
@@ -13,10 +15,15 @@ import { AuthService } from 'src/routes/auth/auth.service'
 import { IsPublic } from 'src/shared/decorators/auth.decorator'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
 import { MessageResDTO } from 'src/shared/dtos/reponse.dto'
+import envConfig from 'src/shared/env.config'
+import { GoogleService } from './google.service'
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly googleService: GoogleService,
+  ) {}
 
   @Post('register')
   @IsPublic()
@@ -57,5 +64,32 @@ export class AuthController {
   @ZodSerializerDto(MessageResDTO)
   async logout(@Body() body: LogoutBodyDTO) {
     return await this.authService.logout(body.refreshToken)
+  }
+
+  @Get('google/authorize')
+  @IsPublic()
+  @ZodSerializerDto(GetAuthorizationUrlResDTO)
+  getAuthorizationUrl(@UserAgent() userAgent: string, @Ip() ip: string) {
+    return this.googleService.getAuthorizationUrl({
+      userAgent,
+      ip,
+    })
+  }
+
+  @Get('google/callback')
+  @IsPublic()
+  async googleCallback(@Query('code') code: string, @Query('state') state: string, @Res() res: Response) {
+    try {
+      const data = await this.googleService.googleCallback({ code, state })
+      const params = new URLSearchParams({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      })
+      return res.redirect(`${envConfig.GOOGLE_CLIENT_REDIRECT_URI}?${params.toString()}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Google sign-in failed, please try another method'
+      const params = new URLSearchParams({ errorMessage: message })
+      return res.redirect(`${envConfig.GOOGLE_CLIENT_REDIRECT_URI}?${params.toString()}`)
+    }
   }
 }

@@ -94,6 +94,19 @@ export const RoleSchema = z.object({
 
 export const LogoutBodySchema = RefreshTokenBodySchema
 
+export const GoogleAuthStateSchema = DeviceSchema.pick({
+  userAgent: true,
+  ip: true,
+})
+
+export const GoogleAuthSignedStateSchema = GoogleAuthStateSchema.extend({
+  iat: z.number(),
+})
+
+export const GetAuthorizationUrlResSchema = z.object({
+  url: z.url(),
+})
+
 export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
 export type RegisterResType = z.infer<typeof RegisterResSchema>
 export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
@@ -106,3 +119,6 @@ export type RefreshTokenResType = z.infer<typeof RefreshTokenResSchema>
 export type DeviceType = z.infer<typeof DeviceSchema>
 export type RoleType = z.infer<typeof RoleSchema>
 export type LogoutBodyType = RefreshTokenBodyType
+export type GoogleAuthStateType = z.infer<typeof GoogleAuthStateSchema>
+export type GoogleAuthSignedStateType = z.infer<typeof GoogleAuthSignedStateSchema>
+export type GetAuthorizationUrlResType = z.infer<typeof GetAuthorizationUrlResSchema>
