@@ -1,10 +1,4 @@
-import {
-  HttpException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-  UnprocessableEntityException,
-} from '@nestjs/common'
+import { HttpException, Injectable } from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import { RolesService } from 'src/routes/auth/roles.service'
@@ -18,6 +12,12 @@ import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type'
 import { LoginBodyType, RefreshTokenBodyType, RegisterBodyType } from './auth.model'
 import { AuthRepository } from './auth.repo'
+import {
+  EmailAlreadyExistsException,
+  InvalidCredentialsException,
+  RefreshTokenAlreadyUsedException,
+  UnauthorizedAccessException,
+} from './error.model'
 
 @Injectable()
 export class AuthService {
@@ -71,12 +71,7 @@ export class AuthService {
       return { ...tokens, user }
     } catch (error) {
       if (isUniqueConstraintPrismaError(error)) {
-        throw new UnprocessableEntityException([
-          {
-            message: 'Email already exists',
-            path: 'email',
-          },
-        ])
+        throw EmailAlreadyExistsException
       }
       throw error
     }
@@ -89,12 +84,7 @@ export class AuthService {
 
     const isPasswordMatch = user ? await this.hashingService.compare(body.password, user.password) : false
     if (!user || !isPasswordMatch) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Email or password is incorrect',
-          path: 'password',
-        },
-      ])
+      throw InvalidCredentialsException
     }
 
     const device = await this.authRepository.findOrCreateDevice({
@@ -139,7 +129,7 @@ export class AuthService {
         token: refreshToken,
       })
       if (!refreshTokenInDb) {
-        throw new UnauthorizedException('Refresh token has already been used')
+        throw RefreshTokenAlreadyUsedException
       }
       const {
         deviceId,
@@ -149,7 +139,7 @@ export class AuthService {
         },
       } = refreshTokenInDb
       if (!deviceId) {
-        throw new UnauthorizedException('Refresh token is not bound to a device')
+        throw UnauthorizedAccessException
       }
       const $updateDevice = this.authRepository.updateDevice(deviceId, {
         ip,
@@ -165,7 +155,7 @@ export class AuthService {
       if (error instanceof HttpException) {
         throw error
       }
-      throw new UnauthorizedException()
+      throw UnauthorizedAccessException
     }
   }
 
@@ -177,10 +167,10 @@ export class AuthService {
         token: refreshToken,
       })
       if (!found) {
-        throw new UnauthorizedException('Refresh token has already been used')
+        throw RefreshTokenAlreadyUsedException
       }
       if (!found.deviceId) {
-        throw new NotFoundException('Device not found')
+        throw UnauthorizedAccessException
       }
 
       await Promise.all([
@@ -194,9 +184,9 @@ export class AuthService {
         throw error
       }
       if (isNotFoundPrismaError(error)) {
-        throw new UnauthorizedException('Refresh token has already been used')
+        throw RefreshTokenAlreadyUsedException
       }
-      throw new UnauthorizedException()
+      throw UnauthorizedAccessException
     }
   }
 }
