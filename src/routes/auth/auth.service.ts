@@ -1,11 +1,17 @@
-import { HttpException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
+import {
+  HttpException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import { RolesService } from 'src/routes/auth/roles.service'
 import { OtpService } from 'src/routes/otp/otp.service'
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
 import envConfig from 'src/shared/env.config'
-import { isUniqueConstraintPrismaError } from 'src/shared/helpers'
+import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TokenService } from 'src/shared/services/token.service'
@@ -158,6 +164,37 @@ export class AuthService {
     } catch (error) {
       if (error instanceof HttpException) {
         throw error
+      }
+      throw new UnauthorizedException()
+    }
+  }
+
+  async logout(refreshToken: string) {
+    try {
+      await this.tokenService.verifyRefreshToken(refreshToken)
+
+      const found = await this.authRepository.findUniqueRefreshTokenIncludeUserRole({
+        token: refreshToken,
+      })
+      if (!found) {
+        throw new UnauthorizedException('Refresh token has already been used')
+      }
+      if (!found.deviceId) {
+        throw new NotFoundException('Device not found')
+      }
+
+      await Promise.all([
+        this.authRepository.deleteRefreshToken({ token: refreshToken }),
+        this.authRepository.updateDevice(found.deviceId, { isActive: false }),
+      ])
+
+      return { message: 'Logout successfully' }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error
+      }
+      if (isNotFoundPrismaError(error)) {
+        throw new UnauthorizedException('Refresh token has already been used')
       }
       throw new UnauthorizedException()
     }
