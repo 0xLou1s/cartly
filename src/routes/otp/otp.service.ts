@@ -58,7 +58,7 @@ export class OtpService {
       ])
     }
 
-    return verificationCode
+    return { message: 'OPT sent successfully' }
   }
 
   async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {

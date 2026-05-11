@@ -18,9 +18,3 @@ export const SendOTPBodySchema = VerificationCodeSchema.pick({
 }).strict()
 
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
-
-export const SendOTPResSchema = z.object({
-  message: z.string(),
-})
-
-export type SendOTPResType = z.infer<typeof SendOTPResSchema>
