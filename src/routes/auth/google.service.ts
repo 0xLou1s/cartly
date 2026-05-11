@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { AuthRepository } from './auth.repo'
 import { AuthService } from './auth.service'
 import { RolesService } from './roles.service'
+import { GoogleUserInfoError, InvalidStateError, MissingStateError, StateExpiredError } from './error.model'
 
 const STATE_TTL_MS = 10 * 60 * 1000
 
@@ -55,7 +56,7 @@ export class GoogleService {
     const oauth2 = google.oauth2({ auth: client, version: 'v2' })
     const { data } = await oauth2.userinfo.get()
     if (!data.email) {
-      throw new Error('Failed to fetch user info from Google')
+      throw GoogleUserInfoError
     }
 
     let user = await this.authRepository.findUniqueUserIncludeRole({ email: data.email })
@@ -87,15 +88,15 @@ export class GoogleService {
   }
 
   verifyState(state: string): GoogleAuthSignedStateType {
-    if (!state) throw new Error('Missing state')
+    if (!state) throw MissingStateError
     const [data, sig] = state.split('.')
-    if (!data || !sig) throw new Error('Invalid state format')
+    if (!data || !sig) throw InvalidStateError
     const expected = createHmac('sha256', envConfig.SECRET_API_KEY).update(data).digest('base64url')
     const a = Buffer.from(sig)
     const b = Buffer.from(expected)
-    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error('Invalid state signature')
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw InvalidStateError
     const parsed = GoogleAuthSignedStateSchema.parse(JSON.parse(Buffer.from(data, 'base64url').toString('utf8')))
-    if (Date.now() - parsed.iat > STATE_TTL_MS) throw new Error('State expired')
+    if (Date.now() - parsed.iat > STATE_TTL_MS) throw StateExpiredError
     return parsed
   }
 }

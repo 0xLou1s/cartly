@@ -1,6 +1,13 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
+import {
+  EmailAlreadyExistsException,
+  EmailNotFoundException,
+  FailedToSendOTPException,
+  InvalidOTPException,
+  OTPExpiredException,
+} from 'src/routes/auth/error.model'
 import { SendOTPBodyType } from 'src/routes/otp/otp.model'
 import { OtpRepository } from 'src/routes/otp/otp.repo'
 import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
@@ -22,23 +29,13 @@ export class OtpService {
       email: body.email,
     })
     if (body.type === TypeOfVerificationCode.REGISTER && user) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Email already exists',
-          path: 'email',
-        },
-      ])
+      throw EmailAlreadyExistsException
     }
     if (body.type === TypeOfVerificationCode.FORGOT_PASSWORD && !user) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Email not found',
-          path: 'email',
-        },
-      ])
+      throw EmailNotFoundException
     }
     const code = generateOTP()
-    const verificationCode = await this.otpRepository.createVerificationCode({
+    await this.otpRepository.createVerificationCode({
       email: body.email,
       code,
       type: body.type,
@@ -50,12 +47,7 @@ export class OtpService {
       code,
     })
     if (error) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Failed to send OTP',
-          path: 'code',
-        },
-      ])
+      throw FailedToSendOTPException
     }
 
     return { message: 'OPT sent successfully' }
@@ -64,20 +56,10 @@ export class OtpService {
   async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {
     const verificationCode = await this.otpRepository.findUniqueVerificationCode(payload)
     if (!verificationCode) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Invalid verification code',
-          path: 'code',
-        },
-      ])
+      throw InvalidOTPException
     }
     if (verificationCode.expiresAt < new Date()) {
-      throw new UnprocessableEntityException([
-        {
-          message: 'Verification code expired',
-          path: 'code',
-        },
-      ])
+      throw OTPExpiredException
     }
     return verificationCode
   }
