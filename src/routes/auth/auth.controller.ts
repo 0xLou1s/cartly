@@ -10,6 +10,7 @@ import {
   RegisterResDTO,
 } from 'src/routes/auth/auth.dto'
 import { AuthService } from 'src/routes/auth/auth.service'
+import { IsPublic } from 'src/shared/decorators/auth.decorator'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
 import { MessageResDTO } from 'src/shared/dtos/reponse.dto'
 
@@ -18,6 +19,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @IsPublic()
   @ZodSerializerDto(RegisterResDTO)
   async register(@Body() body: RegisterBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
     return await this.authService.register({
@@ -28,6 +30,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @IsPublic()
   @ZodSerializerDto(LoginResDTO)
   async login(@Body() body: LoginBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
     return await this.authService.login({
@@ -38,6 +41,7 @@ export class AuthController {
   }
 
   @Post('refresh-token')
+  @IsPublic()
   @HttpCode(HttpStatus.OK)
   @ZodSerializerDto(RefreshTokenResDTO)
   async refreshToken(@Body() body: RefreshTokenBodyDTO, @UserAgent() userAgent: string, @Ip() ip: string) {
