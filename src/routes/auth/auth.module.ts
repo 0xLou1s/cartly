@@ -3,11 +3,12 @@ import { OtpModule } from 'src/routes/otp/otp.module'
 import { AuthController } from './auth.controller'
 import { AuthRepository } from './auth.repo'
 import { AuthService } from './auth.service'
+import { GoogleService } from './google.service'
 import { RolesService } from './roles.service'
 
 @Module({
   imports: [OtpModule],
-  providers: [AuthService, RolesService, AuthRepository],
+  providers: [AuthService, RolesService, AuthRepository, GoogleService],
   controllers: [AuthController],
 })
 export class AuthModule {}

@@ -28,6 +28,11 @@ const configSchema = z.object({
   // email
   RESEND_API_KEY: z.string(),
   RESEND_FROM_EMAIL: z.string(),
+  // oauth
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
+  GOOGLE_REDIRECT_URI: z.string(),
+  GOOGLE_CLIENT_REDIRECT_URI: z.string(),
 })
 
 const configServer = configSchema.safeParse(process.env)
