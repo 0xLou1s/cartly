@@ -10,11 +10,10 @@ export const VerificationCodeSchema = z.object({
   createdAt: z.date(),
 })
 
-export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
-
 export const SendOTPBodySchema = VerificationCodeSchema.pick({
   email: true,
   type: true,
 }).strict()
 
+export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>

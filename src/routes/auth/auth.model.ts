@@ -1,4 +1,4 @@
-import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { AuthMessage } from 'src/shared/constants/messages/auth.message'
 import { UserResSchema, UserSchema } from 'src/shared/models/shared-user.model'
 import { z } from 'zod'
 
@@ -17,7 +17,7 @@ export const RegisterBodySchema = UserSchema.pick({
     if (confirmPassword !== password) {
       ctx.addIssue({
         code: 'custom',
-        message: 'Password and confirm password must match',
+        message: AuthMessage.Error.ConfirmPasswordMismatch,
         path: ['confirmPassword'],
       })
     }
@@ -31,20 +31,6 @@ export const AuthResSchema = z.object({
 
 export const RegisterResSchema = AuthResSchema
 export const LoginResSchema = AuthResSchema
-
-export const VerificationCodeSchema = z.object({
-  id: z.number(),
-  email: z.email(),
-  code: z.string().length(6),
-  type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
-  expiresAt: z.date(),
-  createdAt: z.date(),
-})
-
-export const SendOTPBodySchema = VerificationCodeSchema.pick({
-  email: true,
-  type: true,
-}).strict()
 
 export const LoginBodySchema = UserSchema.pick({
   email: true,
@@ -107,10 +93,26 @@ export const GetAuthorizationUrlResSchema = z.object({
   url: z.url(),
 })
 
+export const ForgotPasswordBodySchema = z
+  .object({
+    email: z.email(),
+    code: z.string().length(6),
+    newPassword: z.string().min(6).max(100),
+    confirmNewPassword: z.string().min(6).max(100),
+  })
+  .strict()
+  .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
+    if (confirmNewPassword !== newPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: AuthMessage.Error.ConfirmPasswordMismatch,
+        path: ['confirmNewPassword'],
+      })
+    }
+  })
+
 export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
 export type RegisterResType = z.infer<typeof RegisterResSchema>
-export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
-export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
 export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
@@ -122,3 +124,4 @@ export type LogoutBodyType = RefreshTokenBodyType
 export type GoogleAuthStateType = z.infer<typeof GoogleAuthStateSchema>
 export type GoogleAuthSignedStateType = z.infer<typeof GoogleAuthSignedStateSchema>
 export type GetAuthorizationUrlResType = z.infer<typeof GetAuthorizationUrlResSchema>
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>

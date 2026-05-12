@@ -37,7 +37,7 @@ export class OtpRepository {
     })
   }
 
-  async deleteVerificationCode(uniqueValue: { id: number } | { email: string }): Promise<VerificationCodeType> {
+  deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
     return this.prismaService.verificationCode.delete({
       where: uniqueValue,
     })
