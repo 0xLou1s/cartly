@@ -1,23 +1,25 @@
 import { UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
+import { AuthMessage } from 'src/shared/constants/messages/auth.message'
+import { OtpMessage } from 'src/shared/constants/messages/otp.message'
 
 // OTP related errors
 export const InvalidOTPException = new UnprocessableEntityException([
   {
-    message: 'Error.InvalidOTP',
+    message: OtpMessage.Error.InvalidOTP,
     path: 'code',
   },
 ])
 
 export const OTPExpiredException = new UnprocessableEntityException([
   {
-    message: 'Error.OTPExpired',
+    message: OtpMessage.Error.OTPExpired,
     path: 'code',
   },
 ])
 
 export const FailedToSendOTPException = new UnprocessableEntityException([
   {
-    message: 'Error.FailedToSendOTP',
+    message: OtpMessage.Error.FailedToSendOTP,
     path: 'code',
   },
 ])
@@ -25,14 +27,14 @@ export const FailedToSendOTPException = new UnprocessableEntityException([
 // Email related errors
 export const EmailAlreadyExistsException = new UnprocessableEntityException([
   {
-    message: 'Error.EmailAlreadyExists',
+    message: AuthMessage.Error.EmailAlreadyExists,
     path: 'email',
   },
 ])
 
 export const EmailNotFoundException = new UnprocessableEntityException([
   {
-    message: 'Error.EmailNotFound',
+    message: AuthMessage.Error.EmailNotFound,
     path: 'email',
   },
 ])
@@ -40,24 +42,24 @@ export const EmailNotFoundException = new UnprocessableEntityException([
 // Password related errors
 export const InvalidPasswordException = new UnprocessableEntityException([
   {
-    message: 'Error.InvalidPassword',
+    message: AuthMessage.Error.InvalidPassword,
     path: 'password',
   },
 ])
 
 export const InvalidCredentialsException = new UnprocessableEntityException([
   {
-    message: 'Error.InvalidCredentials',
+    message: AuthMessage.Error.InvalidCredentials,
     path: 'password',
   },
 ])
 
 // Auth token related errors
-export const RefreshTokenAlreadyUsedException = new UnauthorizedException('Error.RefreshTokenAlreadyUsed')
-export const UnauthorizedAccessException = new UnauthorizedException('Error.UnauthorizedAccess')
+export const RefreshTokenAlreadyUsedException = new UnauthorizedException(AuthMessage.Error.RefreshTokenAlreadyUsed)
+export const UnauthorizedAccessException = new UnauthorizedException(AuthMessage.Error.UnauthorizedAccess)
 
 // Google auth related errors
-export const GoogleUserInfoError = new Error('Error.FailedToGetGoogleUserInfo')
-export const MissingStateError = new Error('Error.MissingState')
-export const InvalidStateError = new Error('Error.InvalidState')
-export const StateExpiredError = new Error('Error.StateExpired')
+export const GoogleUserInfoError = new Error(AuthMessage.Error.FailedToGetGoogleUserInfo)
+export const MissingStateError = new Error(AuthMessage.Error.MissingState)
+export const InvalidStateError = new Error(AuthMessage.Error.InvalidState)
+export const StateExpiredError = new Error(AuthMessage.Error.StateExpired)

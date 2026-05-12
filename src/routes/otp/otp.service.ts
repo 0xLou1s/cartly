@@ -11,6 +11,7 @@ import {
 import { SendOTPBodyType } from 'src/routes/otp/otp.model'
 import { OtpRepository } from 'src/routes/otp/otp.repo'
 import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
+import { OtpMessage } from 'src/shared/constants/messages/otp.message'
 import envConfig from 'src/shared/env.config'
 import { generateOTP } from 'src/shared/helpers'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
@@ -50,7 +51,7 @@ export class OtpService {
       throw FailedToSendOTPException
     }
 
-    return { message: 'OPT sent successfully' }
+    return { message: OtpMessage.Success.Sent }
   }
 
   async verifyOTP(payload: { email: string; code: string; type: TypeOfVerificationCodeType }) {
@@ -64,7 +65,7 @@ export class OtpService {
     return verificationCode
   }
 
-  async deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
+  deleteVerificationCode(uniqueValue: { id: number } | { email: string }) {
     return this.otpRepository.deleteVerificationCode(uniqueValue)
   }
 }

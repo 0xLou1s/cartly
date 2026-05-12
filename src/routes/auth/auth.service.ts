@@ -4,16 +4,18 @@ import ms from 'ms'
 import { RolesService } from 'src/routes/auth/roles.service'
 import { OtpService } from 'src/routes/otp/otp.service'
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { AuthMessage } from 'src/shared/constants/messages/auth.message'
 import envConfig from 'src/shared/env.config'
 import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
+import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { HashingService } from 'src/shared/services/hashing.service'
-import { PrismaService } from 'src/shared/services/prisma.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type'
-import { LoginBodyType, RefreshTokenBodyType, RegisterBodyType } from './auth.model'
+import { ForgotPasswordBodyType, LoginBodyType, RefreshTokenBodyType, RegisterBodyType } from './auth.model'
 import { AuthRepository } from './auth.repo'
 import {
   EmailAlreadyExistsException,
+  EmailNotFoundException,
   InvalidCredentialsException,
   RefreshTokenAlreadyUsedException,
   UnauthorizedAccessException,
@@ -27,7 +29,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly otpService: OtpService,
     private readonly tokenService: TokenService,
-    private readonly prismaService: PrismaService,
+    private readonly sharedUserRepository: SharedUserRepository,
   ) {}
 
   async register(body: RegisterBodyType & { userAgent: string; ip: string }) {
@@ -41,20 +43,16 @@ export class AuthService {
       const clientRoleId = await this.rolesService.getClientRoleId()
       const hashedPassword = await this.hashingService.hash(body.password)
 
-      const [user] = await this.prismaService.$transaction([
-        this.prismaService.user.create({
-          data: {
-            email: body.email,
-            name: body.name,
-            phoneNumber: body.phoneNumber,
-            password: hashedPassword,
-            roleId: clientRoleId,
-          },
-          include: { role: true },
+      const [user] = await Promise.all([
+        this.authRepository.createUserInclueRole({
+          email: body.email,
+          name: body.name,
+          phoneNumber: body.phoneNumber,
+          password: hashedPassword,
+          roleId: clientRoleId,
+          avatar: null,
         }),
-        this.prismaService.verificationCode.delete({
-          where: { id: verificationCode.id },
-        }),
+        this.otpService.deleteVerificationCode({ id: verificationCode.id }),
       ])
 
       const device = await this.authRepository.findOrCreateDevice({
@@ -178,7 +176,7 @@ export class AuthService {
         this.authRepository.updateDevice(found.deviceId, { isActive: false }),
       ])
 
-      return { message: 'Logout successfully' }
+      return { message: AuthMessage.Success.LogoutSuccessful }
     } catch (error) {
       if (error instanceof HttpException) {
         throw error
@@ -188,5 +186,24 @@ export class AuthService {
       }
       throw UnauthorizedAccessException
     }
+  }
+
+  async forgotPassword(body: ForgotPasswordBodyType) {
+    const { email, code, newPassword } = body
+    const user = await this.sharedUserRepository.findUnique({ email })
+    if (!user) {
+      throw EmailNotFoundException
+    }
+    const verificationCode = await this.otpService.verifyOTP({
+      email,
+      code,
+      type: TypeOfVerificationCode.FORGOT_PASSWORD,
+    })
+    const hashedPassword = await this.hashingService.hash(newPassword)
+    await Promise.all([
+      this.authRepository.updateUser({ id: user.id }, { password: hashedPassword }),
+      this.otpService.deleteVerificationCode({ id: verificationCode.id }),
+    ])
+    return { message: AuthMessage.Success.ResetPasswordSuccessful }
   }
 }
